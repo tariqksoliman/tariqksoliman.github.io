@@ -1,91 +1,128 @@
-var scene, camera, renderer;
-var geometry, material, mesh;
-var width, height;
-var pw, ph, prw, prh;
-var mousePos;
+//A straight hard-coded mini
 
-init();
-animate();
+var homeDir = true;
 
-function init() {
+jQuery(function($, undefined) {
+    $('body').terminal(function(command) {
+        switch( command ) {
+            case 'help':
+                    this.echo( helpMessage );
+                break;
+            case 'ls':
+                    if( homeDir )
+                        this.echo( lsMessageHome );
+                    else
+                        this.echo( lsMessageProjects );
+                break;
+            case 'cd Projects':
+                    if( homeDir ) {
+                        this.set_prompt( 'ts:~/Projects> ' );
+                        homeDir = false;
+                    }
+                    else
+                        this.echo( 'cd Projects: No such file or directory' );
+                break;
+            case 'cd ~':
+            case 'cd ../':
+                    if( !homeDir ) {
+                        this.set_prompt( 'ts:~> ' );
+                        homeDir = true;
+                    }
+                break;
+            case 'open about.txt':
+                    if( homeDir )
+                        this.echo( aboutTxt );
+                    else
+                        this.echo( 'open about.txt: No such file or directory' );
+                break;
+            case 'open BML-Traffic-Model.html':
+                    if( !homeDir )
+                        this.echo( openUrl( "https://tariqksoliman.github.io/BML-Traffic-Model/" ) );
+                break;
+            case 'open Fractal-Inferno.html':
+                    if( !homeDir )
+                        this.echo( openUrl( "https://tariqksoliman.github.io/Fractal-Inferno/" ) );
+                break;
+            case 'open ReactChess.html':
+                    if( !homeDir )
+                        this.echo( openUrl( "https://tariqksoliman.github.io/ReactChess/" ) );
+                break;
+            case 'open Vissonance.html':
+                    if( !homeDir )
+                        this.echo( openUrl( "https://tariqksoliman.github.io/Vissonance/" ) );
+                break;
+            case 'clear':
+                this.clear();
+                break;
+            default:
+                this.echo( command + ": command not found.\nType 'help' for a list of commands" );
+        }
+        this.echo( ' ' );
+        if (command !== '') {
+            /*
+            var result = window.eval(command);
+            if (result != undefined) {
+                this.echo(String(result));
+            }
+            */
+        }
+    }, {
+        greetings: greetings,
+        name: 'ts_site',
+        height: window.innerHeight - 16,
+        width: window.innerWidth - 16,
+        prompt: 'ts:~> '
+    });
+});
 
-	scene = new THREE.Scene();
-	width = window.innerWidth;
-	height = window.innerHeight;
+var greetings = ( function() { /*
++=========================+
+| Tariq Soliman Portfolio |
++=========================+            
+*/ } ).toString().split( '\n' ).slice( 1, -1 ).join( '\n' );
 
-	camera = new THREE.PerspectiveCamera( 75, width / height, 1, 8000 );
-	camera.position.z = 500;
+var helpMessage = ( function() { /*
 
-	pw = width * 2;
-	ph = pw / 2;
-	prw = 256;
-	prh = prw / 2;
+Help
+    cd [dirname]:
+        Change directory.
+        Examples:
+            cd Projects
+            cd ../
+    clear:
+        Clear the terminal.
+    help:
+        You already know this one!
+    ls:
+        List information about the files in the current directory.
+    open:
+        Open a text file or url.
+*/ } ).toString().split( '\n' ).slice( 1, -1 ).join( '\n' );
 
-	geometry = new THREE.PlaneBufferGeometry( pw, ph, prw - 1, prh - 1 );
-	material = new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: true, opacity: 0.04, transparent: true, depthWrite: false } );
-	mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
+var lsMessageHome = ( function() { /*
+about.txt
+Projects
+*/ } ).toString().split( '\n' ).slice( 1, -1 ).join( '\n' );
 
-	renderer = new THREE.WebGLRenderer( { alpha: true } );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	renderer.sortObjects = false;
+var lsMessageProjects = ( function() { /*
+BML-Traffic-Model.html
+Fractal-Inferno.html
+ReactChess.html
+Vissonance.html
+*/ } ).toString().split( '\n' ).slice( 1, -1 ).join( '\n' );
 
-	document.getElementById( 'webgl' ).appendChild( renderer.domElement );
 
-	document.addEventListener( 'mousemove', this.onDocumentMouseMove, false );
-	document.addEventListener( 'mouseout', this.onDocumentMouseOut, false );
+var aboutTxt = ( function() { /*
+Hi. I am a person and you are reading what I have previously written!
+*/ } ).toString().split( '\n' ).slice( 1, -1 ).join( '\n' );
 
-}
 
-function animate() {
-
-	requestAnimationFrame( animate );
-
-	modifyMesh();
-
-	renderer.render( scene, camera );
-
-}
-
-function modifyMesh() {
-	var p = mesh.geometry.attributes.position.array;
-
-	for( var i = 0; i < p.length; i++ ) {
-		p[i]   = p[i];
-		p[++i] = p[i];
-		p[++i] = zt( p[i-2], p[i-1], p[i] );
-	}
-
-	function zt( x, y, z ) {
-		if( mousePos ) {
-			var d = Math.sqrt( Math.pow( x - mousePos.x, 2 ) + Math.pow( y - mousePos.y, 2 ) );
-			if( d < 300 ) {
-				d = ( 300 - d ) / 300; 
-				return Math.max( z - ( d * ( d ) * 10 ), -200 );
-			}
-		}
-		return z;//Math.min( z * 0.99, 0 );
-	}
-	geometry.attributes.position.needsUpdate = true;
-}
-
-function onDocumentMouseMove( event ) {
-	var vector = new THREE.Vector3();
-
-	vector.set(
-		( event.clientX / window.innerWidth ) * 2 - 1,
-		- ( event.clientY / window.innerHeight ) * 2 + 1,
-		0.5 );
-
-	vector.unproject( camera );
-
-	var dir = vector.sub( camera.position ).normalize();
-
-	var distance = - camera.position.z / dir.z;
-
-	mousePos = camera.position.clone().add( dir.multiplyScalar( distance ) );	
-}
-
-function onDocumentMouseOut( event ) {
-	mousePos = null;
+function openUrl( url ) {
+    var win = window.open( url, '_blank' );
+    if (win) {
+        win.focus();
+        return '';
+    } else {
+        return 'Please allow popups for this website';
+    }
 }
